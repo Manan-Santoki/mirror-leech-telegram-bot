@@ -11,6 +11,7 @@ async def main():
         load_settings,
         load_configurations,
         save_settings,
+        set_bot_commands,
         update_aria2_options,
         update_nzb_options,
         update_qb_options,
@@ -42,6 +43,7 @@ async def main():
 
     await gather(
         save_settings(),
+        set_bot_commands(),
         jdownloader.boot(),
         clean_all(),
         initiate_search_tools(),

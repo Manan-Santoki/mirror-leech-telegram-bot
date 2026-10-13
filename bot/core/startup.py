@@ -196,6 +196,37 @@ async def save_settings():
         )
 
 
+async def set_bot_commands():
+    from pyrogram.types import BotCommand
+    from ..helper.telegram_helper.bot_commands import BotCommands
+
+    commands = [
+        (BotCommands.QbMirrorCommand[0], "Torrent/magnet to cloud (-up movies / -up tv)"),
+        (BotCommands.MirrorCommand[0], "Link or file to cloud (-up movies / -up tv)"),
+        (BotCommands.QbLeechCommand[0], "Torrent/magnet to Telegram"),
+        (BotCommands.LeechCommand[0], "Link or file to Telegram"),
+        (BotCommands.YtdlCommand[0], "yt-dlp link to cloud"),
+        (BotCommands.YtdlLeechCommand[0], "yt-dlp link to Telegram"),
+        (BotCommands.SearchCommand, "Search torrents"),
+        (BotCommands.StatusCommand, "Show running tasks"),
+        (BotCommands.SelectCommand, "Select files of a torrent"),
+        (BotCommands.CancelTaskCommand[0], "Cancel a task by gid or reply"),
+        (BotCommands.CancelAllCommand, "Cancel all tasks"),
+        (BotCommands.UserSetCommand[0], "User settings"),
+        (BotCommands.BotSetCommand[0], "Bot settings"),
+        (BotCommands.StatsCommand, "Server stats"),
+        (BotCommands.LogCommand, "Get bot log"),
+        (BotCommands.RestartCommand, "Restart the bot"),
+        (BotCommands.HelpCommand, "All commands"),
+    ]
+    try:
+        await TgClient.bot.set_bot_commands(
+            [BotCommand(cmd, desc) for cmd, desc in commands]
+        )
+    except Exception as e:
+        LOGGER.error(f"Failed to set bot commands: {e}")
+
+
 async def update_variables():
     if (
         Config.LEECH_SPLIT_SIZE > TgClient.MAX_SPLIT_SIZE
