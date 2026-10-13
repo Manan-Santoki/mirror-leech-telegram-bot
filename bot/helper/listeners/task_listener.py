@@ -45,6 +45,7 @@ from ..mirror_leech_utils.status_utils.telegram_status import TelegramStatus
 from ..mirror_leech_utils.status_utils.buzzheavier_status import BuzzHeavierStatus
 from ..mirror_leech_utils.status_utils.gofile_status import GoFileStatus
 from ..mirror_leech_utils.upload_utils.telegram_uploader import TelegramUploader
+from ..ext_utils.arr_import import arr_import, is_arr_destination
 from ..telegram_helper.button_build import ButtonMaker
 from ..telegram_helper.message_utils import (
     send_message,
@@ -380,6 +381,8 @@ class TaskListener(TaskConfig):
             if mime_type == "Folder":
                 msg += f"\n<b>SubFolders: </b>{folders}"
                 msg += f"\n<b>Files: </b>{files}"
+            if is_arr_destination(rclone_path):
+                msg += f"\n\n{await arr_import(rclone_path, self.name)}"
             if self.is_buzzheavier:
                 buttons = ButtonMaker()
                 buttons.url_button("☁️ Cloud Link", link)

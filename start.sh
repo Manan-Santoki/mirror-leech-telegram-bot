@@ -12,6 +12,9 @@ fi
 if [ -n "$RCLONE_CONF_B64" ]; then
     echo "$RCLONE_CONF_B64" | base64 -d > rclone.conf
 fi
+if [ -n "$ARR_LOCAL_DIR" ] && ! grep -q "^\[${ARR_REMOTE:-arr}\]" rclone.conf 2>/dev/null; then
+    printf '\n[%s]\ntype = local\n' "${ARR_REMOTE:-arr}" >> rclone.conf
+fi
 source mltbenv/bin/activate
 python3 update.py
 python3 -m bot
