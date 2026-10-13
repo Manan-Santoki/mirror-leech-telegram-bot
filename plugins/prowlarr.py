@@ -39,6 +39,14 @@ class prowlarr(object):
     }
 
     def search(self, what, cat="all"):
+        # qBittorrent may route every socket through its SOCKS proxy; Prowlarr is
+        # reached directly (PROWLARR_URL is internal), so turn that off here
+        try:
+            from helpers import enable_socks_proxy
+
+            enable_socks_proxy(False)
+        except Exception:
+            pass
         params = [("query", what.replace("%20", " ")), ("type", "search")]
         for c in self.supported_categories.get(cat) or []:
             params.append(("categories", c))

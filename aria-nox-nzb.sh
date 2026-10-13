@@ -16,5 +16,8 @@ aria2c --allow-overwrite=true --auto-file-renaming=true --bt-enable-lpd=true --b
        --http-accept-gzip=true --max-file-not-found=0 --max-tries=20  --peer-id-prefix=-qB4520- --reuse-uri=true \
        --content-disposition-default-utf8=true --user-agent=Wget/1.12 --peer-agent=qBittorrent/4.5.2 --quiet=true \
        --summary-interval=0 --max-upload-limit=1K $aria2_iface
-qbittorrent-nox -d --profile="$(pwd)"
+# qBittorrent uses its own SOCKS proxy setting (also passed to search plugins);
+# inheriting the HTTP proxy env too would make plugins proxy twice and fail
+env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+    qbittorrent-nox -d --profile="$(pwd)"
 sabnzbdplus -f sabnzbd/SABnzbd.ini -s :::8070 -b 0 -d -c -l 0 --console

@@ -12,7 +12,8 @@ services:
       LANEPOOL_PASS: ${LANEPOOL_PASS}
       LANEPOOL_COUNTRY: ${LANEPOOL_COUNTRY:-}
       SESSION_TTL_MIN: ${SESSION_TTL_MIN:-1440}
-      WEB_TARGET: app:80
+      # by IP: other Dokploy projects also have a service called "app" on dokploy-network
+      WEB_TARGET: 172.31.78.20:80
       PROWLARR_TARGET: ${PROWLARR_TARGET:-prowlarr:9696}
     networks:
       - dokploy-network
