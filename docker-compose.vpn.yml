@@ -1,6 +1,7 @@
 # All bot traffic (Telegram, aria2, qBittorrent, SABnzbd, yt-dlp, uploads) is routed
 # through Gluetun. Gluetun's firewall blocks traffic if the VPN drops, and the bot
 # refuses to start and binds aria2/qBittorrent to VPN_INTERFACE as a second layer.
+# Bot settings come from .env (Dokploy "Create Environment File").
 # Keep UPSTREAM_REPO empty (or point it at this fork) so update.py doesn't overwrite this.
 services:
   gluetun:
@@ -10,15 +11,20 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     environment:
-      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER:-protonvpn}
+      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
       VPN_TYPE: wireguard
       WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
-      SERVER_COUNTRIES: ${SERVER_COUNTRIES:-Netherlands}
-      VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-on}
+      WIREGUARD_ADDRESSES: ${WIREGUARD_ADDRESSES:-}
+      SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
+      VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-off}
       # Allow Traefik (Dokploy domain) to reach the web UI on BASE_URL_PORT
       FIREWALL_INPUT_PORTS: ${BASE_URL_PORT:-80}
-    # Ports for the bot must be published here, never on the mltb service.
-    # Prefer a Dokploy domain on this service (port 80) over publishing ports.
+      # Allow the bot to reach MongoDB on the internal network (by IP, no DNS leak)
+      FIREWALL_OUTBOUND_SUBNETS: 172.31.77.0/24
+    networks:
+      - dokploy-network
+      - internal
+    # Ports for the bot must be published here, never on the app service.
     restart: unless-stopped
 
   app:
@@ -27,17 +33,33 @@ services:
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
+      - mongo
+    env_file:
+      - .env
     environment:
       VPN_INTERFACE: tun0
-      BOT_TOKEN: ${BOT_TOKEN}
-      OWNER_ID: ${OWNER_ID}
-      TELEGRAM_API: ${TELEGRAM_API}
-      TELEGRAM_HASH: ${TELEGRAM_HASH}
-      USER_SESSION_STRING: ${USER_SESSION_STRING:-}
-      DATABASE_URL: ${DATABASE_URL:-}
-      BASE_URL: ${BASE_URL:-}
-      BASE_URL_PORT: ${BASE_URL_PORT:-80}
-      AUTHORIZED_CHATS: ${AUTHORIZED_CHATS:-}
-      SUDO_USERS: ${SUDO_USERS:-}
       UPSTREAM_REPO: ""
     restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mltb
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      internal:
+        ipv4_address: 172.31.77.10
+    restart: unless-stopped
+
+networks:
+  dokploy-network:
+    external: true
+  internal:
+    ipam:
+      config:
+        - subnet: 172.31.77.0/24
+
+volumes:
+  mongo-data:
