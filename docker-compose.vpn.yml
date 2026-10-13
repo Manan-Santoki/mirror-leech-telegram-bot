@@ -24,6 +24,7 @@ services:
     depends_on:
       - gateway
       - mongo
+      - torrentapi
     env_file:
       - .env
     environment:
@@ -36,8 +37,8 @@ services:
       http_proxy: http://gateway:1080
       https_proxy: http://gateway:1080
       all_proxy: http://gateway:1080
-      NO_PROXY: localhost,127.0.0.1,::1,mongo,gateway,172.31.78.0/24
-      no_proxy: localhost,127.0.0.1,::1,mongo,gateway,172.31.78.0/24
+      NO_PROXY: localhost,127.0.0.1,::1,mongo,gateway,torrentapi,172.31.78.0/24
+      no_proxy: localhost,127.0.0.1,::1,mongo,gateway,torrentapi,172.31.78.0/24
       RCLONE_SFTP_SOCKS_PROXY: gateway:1080
       TG_PROXY: '{"scheme": "socks5", "hostname": "gateway", "port": 1080}'
       QB_PROXY_HOST: gateway
@@ -51,6 +52,17 @@ services:
     networks:
       isolated:
         ipv4_address: 172.31.78.20
+    restart: unless-stopped
+
+  torrentapi:
+    # Torrent search API (Ryuk-me/Torrent-Api-py); scrapes sites through the gateway
+    build: https://github.com/Ryuk-me/Torrent-Api-py.git#1a302617686b22714eacf60cc8d215bbd5979ffe
+    environment:
+      HTTP_PROXY: http://gateway:1080
+      HTTPS_PROXY: http://gateway:1080
+    networks:
+      isolated:
+        ipv4_address: 172.31.78.30
     restart: unless-stopped
 
   mongo:
