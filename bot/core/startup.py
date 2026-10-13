@@ -107,7 +107,15 @@ async def load_settings():
             if not key.startswith("__")
         }
     except ModuleNotFoundError:
-        config_file = {}
+        # Deployed with env vars: treat them like config.py, so changing an env var
+        # in the deploy overrides the copy saved in the database
+        config_file = {
+            key: getenv(key).strip()
+            for key in dir(Config)
+            if not key.startswith("_")
+            and key.isupper()
+            and getenv(key) is not None
+        }
 
     old_config = await database.db.settings.deployConfig.find_one(
         {"_id": BOT_ID}, {"_id": 0}

@@ -24,6 +24,9 @@ fi
 if [ -n "$RCLONE_CONF_B64" ]; then
     echo "$RCLONE_CONF_B64" | base64 -d > rclone.conf
 fi
+if [ -n "$TOKEN_PICKLE_B64" ]; then
+    echo "$TOKEN_PICKLE_B64" | base64 -d > token.pickle
+fi
 if [ -n "$ARR_LOCAL_DIR" ] && ! grep -q "^\[${ARR_REMOTE:-arr}\]" rclone.conf 2>/dev/null; then
     printf '\n[%s]\ntype = local\n' "${ARR_REMOTE:-arr}" >> rclone.conf
 fi
