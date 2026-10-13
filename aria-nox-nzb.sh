@@ -4,6 +4,9 @@ if [ -n "$VPN_INTERFACE" ]; then
     conf=qBittorrent/config/qBittorrent.conf
     awk -v i="$VPN_INTERFACE" '/^Session\\Interface/ {next} {print} /^\[BitTorrent\]$/ {print "Session\\Interface=" i; print "Session\\InterfaceName=" i}' "$conf" > "$conf.tmp" && mv "$conf.tmp" "$conf"
 fi
+if [ -n "$EGRESS_PROXY" ]; then
+    aria2_iface="$aria2_iface --all-proxy=$EGRESS_PROXY --no-proxy=localhost,127.0.0.1"
+fi
 tracker_list=$(curl -Ns https://ngosang.github.io/trackerslist/trackers_all_http.txt | awk '$0' | tr '\n\n' ',')
 aria2c --allow-overwrite=true --auto-file-renaming=true --bt-enable-lpd=true --bt-detach-seed-only=true \
        --bt-remove-unselected-file=true --bt-tracker="[$tracker_list]" --bt-max-peers=0 --enable-rpc=true \

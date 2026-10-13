@@ -47,6 +47,21 @@ async def update_qb_options():
         await TorrentManager.qbittorrent.app.set_preferences(
             {"current_network_interface": vpn_iface}
         )
+    if proxy_host := getenv("QB_PROXY_HOST"):
+        proxy_prefs = {
+            "proxy_type": "SOCKS5",
+            "proxy_ip": proxy_host,
+            "proxy_port": int(getenv("QB_PROXY_PORT", "1080")),
+            "proxy_auth_enabled": False,
+            "proxy_hostname_lookup": True,
+            "proxy_peer_connections": True,
+            "proxy_bittorrent": True,
+            "proxy_torrents_only": False,
+            "proxy_rss": True,
+            "proxy_misc": True,
+        }
+        qbit_options.update(proxy_prefs)
+        await TorrentManager.qbittorrent.app.set_preferences(proxy_prefs)
 
 
 async def update_aria2_options():

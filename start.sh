@@ -9,6 +9,18 @@ if [ -n "$VPN_INTERFACE" ]; then
         exit 1
     fi
 fi
+if [ -n "$EGRESS_PROXY" ]; then
+    echo "Waiting for egress proxy $EGRESS_PROXY..."
+    for i in $(seq 1 60); do
+        ip=$(curl -s -m 10 -x "$EGRESS_PROXY" https://api.ipify.org) && [ -n "$ip" ] && break
+        sleep 2
+    done
+    if [ -z "$ip" ]; then
+        echo "Egress proxy not working, refusing to start!"
+        exit 1
+    fi
+    echo "Egress via proxy, exit IP: $ip"
+fi
 if [ -n "$RCLONE_CONF_B64" ]; then
     echo "$RCLONE_CONF_B64" | base64 -d > rclone.conf
 fi

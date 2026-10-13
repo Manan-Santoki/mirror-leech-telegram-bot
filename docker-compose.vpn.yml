@@ -1,50 +1,56 @@
-# All bot traffic (Telegram, aria2, qBittorrent, SABnzbd, yt-dlp, uploads) is routed
-# through Gluetun. Gluetun's firewall blocks traffic if the VPN drops, and the bot
-# refuses to start and binds aria2/qBittorrent to VPN_INTERFACE as a second layer.
+# The app has NO direct internet access: it only sits on the isolated network (no
+# egress route). Its only way out is the gateway, which forwards through lanepool's
+# Surfshark exits using one sticky session and rotates to a new exit if it dies.
+# If the gateway or lanepool is down, the bot simply can't connect (fail closed).
 # Bot settings come from .env (Dokploy "Create Environment File").
-# Keep UPSTREAM_REPO empty (or point it at this fork) so update.py doesn't overwrite this.
 services:
-  gluetun:
-    image: qmcgaw/gluetun:v3.40.0
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
+  gateway:
+    build: ./gateway
     environment:
-      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
-      VPN_TYPE: wireguard
-      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
-      WIREGUARD_ADDRESSES: ${WIREGUARD_ADDRESSES:-}
-      SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
-      VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-off}
-      # Allow Traefik (Dokploy domain) to reach the web UI on BASE_URL_PORT
-      FIREWALL_INPUT_PORTS: ${BASE_URL_PORT:-80}
-      # Allow the bot to reach MongoDB on the internal network (by IP, no DNS leak)
-      FIREWALL_OUTBOUND_SUBNETS: 172.31.77.0/24
+      LANEPOOL_URL: ${LANEPOOL_URL:-lanepool:8080}
+      LANEPOOL_USER: ${LANEPOOL_USER}
+      LANEPOOL_PASS: ${LANEPOOL_PASS}
+      LANEPOOL_COUNTRY: ${LANEPOOL_COUNTRY:-}
+      SESSION_TTL_MIN: ${SESSION_TTL_MIN:-1440}
+      WEB_TARGET: app:80
     networks:
       - dokploy-network
-      - internal
-    # Ports for the bot must be published here, never on the app service.
+      - isolated
     restart: unless-stopped
 
   app:
     build: .
     command: bash start.sh
-    network_mode: "service:gluetun"
     depends_on:
-      - gluetun
+      - gateway
       - mongo
     env_file:
       - .env
     environment:
-      VPN_INTERFACE: tun0
       UPSTREAM_REPO: ""
+      # Every client is pointed at the gateway; nothing else is reachable anyway
+      EGRESS_PROXY: http://gateway:1080
+      HTTP_PROXY: http://gateway:1080
+      HTTPS_PROXY: http://gateway:1080
+      ALL_PROXY: http://gateway:1080
+      http_proxy: http://gateway:1080
+      https_proxy: http://gateway:1080
+      all_proxy: http://gateway:1080
+      NO_PROXY: localhost,127.0.0.1,::1,mongo,gateway,172.31.78.0/24
+      no_proxy: localhost,127.0.0.1,::1,mongo,gateway,172.31.78.0/24
+      RCLONE_SFTP_SOCKS_PROXY: gateway:1080
+      TG_PROXY: '{"scheme": "socks5", "hostname": "gateway", "port": 1080}'
+      QB_PROXY_HOST: gateway
+      QB_PROXY_PORT: "1080"
       # Uploads to arr:/arr-import/{movies,tv} land in the host folder Radarr/Sonarr
       # see as /downloads/mltb, then get imported and renamed by them
       ARR_LOCAL_DIR: /arr-import
       ARR_REMOTE_DIR: /downloads/mltb
     volumes:
       - ${ARR_HOST_DIR:-/opt/qbit-downloads/mltb}:/arr-import
+    networks:
+      isolated:
+        ipv4_address: 172.31.78.20
     restart: unless-stopped
 
   mongo:
@@ -55,17 +61,18 @@ services:
     volumes:
       - mongo-data:/data/db
     networks:
-      internal:
-        ipv4_address: 172.31.77.10
+      isolated:
+        ipv4_address: 172.31.78.10
     restart: unless-stopped
 
 networks:
   dokploy-network:
     external: true
-  internal:
+  isolated:
+    internal: true
     ipam:
       config:
-        - subnet: 172.31.77.0/24
+        - subnet: 172.31.78.0/24
 
 volumes:
   mongo-data:
