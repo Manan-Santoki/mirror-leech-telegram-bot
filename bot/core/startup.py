@@ -3,6 +3,7 @@ from aiofiles import open as aiopen
 from aioshutil import rmtree
 from asyncio import create_subprocess_exec, create_subprocess_shell, sleep
 from importlib import import_module
+from os import getenv
 
 from .. import (
     aria2_options,
@@ -41,6 +42,11 @@ async def update_qb_options():
         )
     else:
         await TorrentManager.qbittorrent.app.set_preferences(qbit_options)
+    if vpn_iface := getenv("VPN_INTERFACE"):
+        qbit_options["current_network_interface"] = vpn_iface
+        await TorrentManager.qbittorrent.app.set_preferences(
+            {"current_network_interface": vpn_iface}
+        )
 
 
 async def update_aria2_options():
