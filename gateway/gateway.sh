@@ -14,6 +14,8 @@
 : "${WEB_TARGET:=app:80}"
 
 socat TCP-LISTEN:80,fork,reuseaddr "TCP:${WEB_TARGET}" &
+# Optional relay so the isolated app can reach Prowlarr on dokploy-network
+[ -n "$PROWLARR_TARGET" ] && socat TCP-LISTEN:9696,fork,reuseaddr "TCP:${PROWLARR_TARGET}" &
 
 glider_pid=""
 

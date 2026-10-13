@@ -13,6 +13,7 @@ services:
       LANEPOOL_COUNTRY: ${LANEPOOL_COUNTRY:-}
       SESSION_TTL_MIN: ${SESSION_TTL_MIN:-1440}
       WEB_TARGET: app:80
+      PROWLARR_TARGET: ${PROWLARR_TARGET:-prowlarr:9696}
     networks:
       - dokploy-network
       - isolated
@@ -41,6 +42,7 @@ services:
       no_proxy: localhost,127.0.0.1,::1,mongo,gateway,torrentapi,172.31.78.0/24
       RCLONE_SFTP_SOCKS_PROXY: gateway:1080
       TG_PROXY: '{"scheme": "socks5", "hostname": "gateway", "port": 1080}'
+      PROWLARR_URL: http://gateway:9696
       QB_PROXY_HOST: gateway
       QB_PROXY_PORT: "1080"
       # Uploads to arr:/arr-import/{movies,tv} land in the host folder Radarr/Sonarr

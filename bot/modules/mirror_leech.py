@@ -12,6 +12,7 @@ from ..helper.ext_utils.bot_utils import (
     COMMAND_USAGE,
 )
 from ..helper.ext_utils.exceptions import DirectDownloadLinkException
+from ..helper.ext_utils.prowlarr import is_prowlarr_link, resolve_prowlarr_link
 from ..helper.ext_utils.links_utils import (
     is_url,
     is_magnet,
@@ -311,6 +312,14 @@ class Mirror(TaskListener):
             )
             await self.remove_from_same_dir()
             return
+
+        if is_prowlarr_link(self.link):
+            try:
+                self.link = await resolve_prowlarr_link(self.link, path)
+            except Exception as e:
+                await send_message(self.message, f"ERROR: Prowlarr download failed: {e}")
+                await self.remove_from_same_dir()
+                return
 
         if len(self.link) > 0:
             LOGGER.info(self.link)
